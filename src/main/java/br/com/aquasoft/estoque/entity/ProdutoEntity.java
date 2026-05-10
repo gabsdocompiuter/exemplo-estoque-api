@@ -13,7 +13,12 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "produto")
-public class ProdutoEntity extends BaseEntity{
+public class ProdutoEntity {
+
+    @Id
+    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @Column(name = "codigo_barras", unique = true)
     private String codigoBarras;

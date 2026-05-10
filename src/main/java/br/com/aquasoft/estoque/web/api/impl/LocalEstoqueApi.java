@@ -26,9 +26,8 @@ class LocalEstoqueApi implements ILocalEstoqueApi {
 
     @Override
     public ResponseEntity<LocalEstoqueDto> findById(Long id) {
-        Optional<LocalEstoqueEntity> result = localEstoqueService.findById(id);
-
-        return result.map(LocalEstoqueDto::fromEntity)
+        return localEstoqueService.findById(id)
+                .map(LocalEstoqueDto::fromEntity)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.noContent().build());
     }

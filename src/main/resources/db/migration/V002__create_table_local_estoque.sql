@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS local_estoque (
+    id BIGSERIAL PRIMARY KEY,
+    descricao VARCHAR(100) NOT NULL
+);

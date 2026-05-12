@@ -27,6 +27,11 @@ public class ProdutoService implements IProdutoService {
     }
 
     @Override
+    public Optional<ProdutoEntity> findByCodigoBarras(String codigoBarras) {
+        return produtoRepository.findByCodigoBarras(codigoBarras);
+    }
+
+    @Override
     public ProdutoEntity save(ProdutoEntity entity) {
         return produtoRepository.save(entity);
     }

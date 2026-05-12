@@ -11,6 +11,8 @@ public interface IProdutoService {
 
     Optional<ProdutoEntity> findById(Long id);
 
+    Optional<ProdutoEntity> findByCodigoBarras(String codigoBarras);
+
     ProdutoEntity save(ProdutoEntity entity);
 
     void deleteById(Long id);

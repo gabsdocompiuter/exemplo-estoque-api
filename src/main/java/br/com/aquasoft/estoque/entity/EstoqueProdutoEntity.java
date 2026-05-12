@@ -32,9 +32,6 @@ public class EstoqueProdutoEntity {
     @Column(name = "quantidade_estoque")
     private BigDecimal quantidadeEmEstoque;
 
-    @Column(name = "quantidade_reservada")
-    private BigDecimal quantidadeReservada;
-
     @Builder.Default
     @OneToMany(mappedBy = "estoqueProduto")
     private List<MovimentacaoEstoqueProdutoEntity> movimentacaoEstoqueList = new ArrayList<>();

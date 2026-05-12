@@ -2,18 +2,24 @@ package br.com.aquasoft.estoque.service.impl;
 
 import br.com.aquasoft.estoque.dto.EstoqueLocalProdutoDto;
 import br.com.aquasoft.estoque.dto.EstoqueProdutoDto;
+import br.com.aquasoft.estoque.dto.MovimentacaoProdutoDto;
 import br.com.aquasoft.estoque.dto.ProdutoDto;
 import br.com.aquasoft.estoque.entity.EstoqueProdutoEntity;
+import br.com.aquasoft.estoque.entity.LocalEstoqueEntity;
+import br.com.aquasoft.estoque.entity.MovimentacaoEstoqueProdutoEntity;
 import br.com.aquasoft.estoque.entity.ProdutoEntity;
 import br.com.aquasoft.estoque.repository.EstoqueProdutoRepository;
 import br.com.aquasoft.estoque.repository.MovimentacaoEstoqueProdutoRepository;
 import br.com.aquasoft.estoque.service.IEstoqueService;
+import br.com.aquasoft.estoque.service.ILocalEstoqueService;
 import br.com.aquasoft.estoque.service.IProdutoService;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -21,6 +27,7 @@ import java.util.List;
 public class EstoqueService implements IEstoqueService {
 
     private final IProdutoService produtoService;
+    private final ILocalEstoqueService localEstoqueService;
 
     private final EstoqueProdutoRepository estoqueProdutoRepository;
     private final MovimentacaoEstoqueProdutoRepository movimentacaoEstoqueProdutoRepository;
@@ -30,6 +37,11 @@ public class EstoqueService implements IEstoqueService {
         ProdutoEntity produto = produtoService.findByCodigoBarras(codigoProduto)
                 .orElseThrow(() -> new EntityNotFoundException("Produto não encontrado: " + codigoProduto));
 
+        return getEstoqueProduto(produto);
+    }
+
+    @Override
+    public EstoqueProdutoDto getEstoqueProduto(ProdutoEntity produto) {
         List<EstoqueProdutoEntity> estoqueList = estoqueProdutoRepository.findEstoqueProduto(produto);
 
         List<EstoqueLocalProdutoDto> estoqueLocalProdutoDtoList = estoqueList.stream()
@@ -48,5 +60,43 @@ public class EstoqueService implements IEstoqueService {
                 .totalEmEstoque(quantidadeTotal)
                 .locaisEstoque(estoqueLocalProdutoDtoList)
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public EstoqueProdutoDto realizarMovimentacao(MovimentacaoProdutoDto movimentacaoProduto) {
+        ProdutoEntity produto = produtoService.findById(movimentacaoProduto.getProduto().getId())
+                .orElseThrow(() -> new EntityNotFoundException("Produto não encontrado"));
+
+        LocalEstoqueEntity localEstoque = localEstoqueService.findById((movimentacaoProduto.getLocalEstoque().getId()))
+                .orElseThrow(() -> new EntityNotFoundException("Local Estoque não encontrado"));
+
+        EstoqueProdutoEntity estoqueProduto = estoqueProdutoRepository.findEstoqueProduto(produto, localEstoque)
+                .orElse(null);
+
+        if (estoqueProduto == null) {
+            estoqueProduto = estoqueProdutoRepository.save(new EstoqueProdutoEntity(produto, localEstoque));
+        }
+
+        movimentacaoEstoqueProdutoRepository.save(MovimentacaoEstoqueProdutoEntity.builder()
+                .estoqueProduto(estoqueProduto)
+                .quantidade(movimentacaoProduto.getQuantidade())
+                .horarioMovimentacao(LocalDateTime.now())
+                .tipoMovimentacaoEstoque(movimentacaoProduto.getTipoMovimentacao())
+                .build()
+        );
+
+        boolean diminuiQuantidade = !movimentacaoProduto.getTipoMovimentacao().isSomaQuantidade();
+
+        BigDecimal quantidadeMovimentada = diminuiQuantidade
+                ? movimentacaoProduto.getQuantidade().negate()
+                : movimentacaoProduto.getQuantidade();
+
+        estoqueProduto.setQuantidadeEmEstoque(
+                estoqueProduto.getQuantidadeEmEstoque().add(quantidadeMovimentada)
+        );
+
+        estoqueProdutoRepository.save(estoqueProduto);
+        return getEstoqueProduto(produto);
     }
 }

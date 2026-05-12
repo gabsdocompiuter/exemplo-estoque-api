@@ -30,9 +30,15 @@ public class EstoqueProdutoEntity {
     private LocalEstoqueEntity localEstoque;
 
     @Column(name = "quantidade_estoque")
-    private BigDecimal quantidadeEmEstoque;
+    private BigDecimal quantidadeEmEstoque = BigDecimal.ZERO;
 
     @Builder.Default
     @OneToMany(mappedBy = "estoqueProduto")
     private List<MovimentacaoEstoqueProdutoEntity> movimentacaoEstoqueList = new ArrayList<>();
+
+
+    public EstoqueProdutoEntity(ProdutoEntity produto, LocalEstoqueEntity localEstoque) {
+        this.produto = produto;
+        this.localEstoque = localEstoque;
+    }
 }

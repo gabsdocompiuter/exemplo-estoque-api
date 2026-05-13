@@ -10,6 +10,6 @@ public interface IEstoqueService {
 
     EstoqueProdutoDto getEstoqueProduto(ProdutoEntity produto);
 
-    EstoqueProdutoDto realizarMovimentacao(MovimentacaoProdutoDto entradaProduto);
+    EstoqueProdutoDto movimentarProduto(MovimentacaoProdutoDto entradaProduto);
 
 }

@@ -11,10 +11,10 @@ public enum TipoMovimentacaoEstoque {
     ;
 
     private final String description;
-    private final boolean somaQuantidade;
+    private final boolean entrada;
 
-    TipoMovimentacaoEstoque(String description, boolean somaQuantidade) {
+    TipoMovimentacaoEstoque(String description, boolean entrada) {
         this.description = description;
-        this.somaQuantidade = somaQuantidade;
+        this.entrada = entrada;
     }
 }

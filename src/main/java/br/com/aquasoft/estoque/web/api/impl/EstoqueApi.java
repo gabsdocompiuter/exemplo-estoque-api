@@ -2,6 +2,7 @@ package br.com.aquasoft.estoque.web.api.impl;
 
 import br.com.aquasoft.estoque.dto.EstoqueProdutoDto;
 import br.com.aquasoft.estoque.dto.MovimentacaoProdutoDto;
+import br.com.aquasoft.estoque.exceptions.BusinessException;
 import br.com.aquasoft.estoque.service.IEstoqueService;
 import br.com.aquasoft.estoque.web.api.IEstoqueApi;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +25,7 @@ class EstoqueApi implements IEstoqueApi {
     @Override
     public ResponseEntity<EstoqueProdutoDto> movimentarEstoque(MovimentacaoProdutoDto movimentacaoProduto) {
         return ResponseEntity.ok(
-                estoqueService.realizarMovimentacao(movimentacaoProduto)
+                estoqueService.movimentarProduto(movimentacaoProduto)
         );
     }
 }

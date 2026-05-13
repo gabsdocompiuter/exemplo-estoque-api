@@ -8,12 +8,13 @@ import br.com.aquasoft.estoque.entity.EstoqueProdutoEntity;
 import br.com.aquasoft.estoque.entity.LocalEstoqueEntity;
 import br.com.aquasoft.estoque.entity.MovimentacaoEstoqueProdutoEntity;
 import br.com.aquasoft.estoque.entity.ProdutoEntity;
+import br.com.aquasoft.estoque.enums.TipoMovimentacaoEstoque;
+import br.com.aquasoft.estoque.exceptions.BusinessException;
 import br.com.aquasoft.estoque.repository.EstoqueProdutoRepository;
 import br.com.aquasoft.estoque.repository.MovimentacaoEstoqueProdutoRepository;
 import br.com.aquasoft.estoque.service.IEstoqueService;
 import br.com.aquasoft.estoque.service.ILocalEstoqueService;
 import br.com.aquasoft.estoque.service.IProdutoService;
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -35,7 +36,7 @@ public class EstoqueService implements IEstoqueService {
     @Override
     public EstoqueProdutoDto getEstoqueProduto(String codigoProduto) {
         ProdutoEntity produto = produtoService.findByCodigoBarras(codigoProduto)
-                .orElseThrow(() -> new EntityNotFoundException("Produto não encontrado: " + codigoProduto));
+                .orElseThrow(() -> new BusinessException("Produto não encontrado: " + codigoProduto));
 
         return getEstoqueProduto(produto);
     }
@@ -64,39 +65,64 @@ public class EstoqueService implements IEstoqueService {
 
     @Override
     @Transactional
-    public EstoqueProdutoDto realizarMovimentacao(MovimentacaoProdutoDto movimentacaoProduto) {
+    public EstoqueProdutoDto movimentarProduto(MovimentacaoProdutoDto movimentacaoProduto) {
         ProdutoEntity produto = produtoService.findById(movimentacaoProduto.getProduto().getId())
-                .orElseThrow(() -> new EntityNotFoundException("Produto não encontrado"));
+                .orElseThrow(() -> new BusinessException("Produto não encontrado"));
 
         LocalEstoqueEntity localEstoque = localEstoqueService.findById((movimentacaoProduto.getLocalEstoque().getId()))
-                .orElseThrow(() -> new EntityNotFoundException("Local Estoque não encontrado"));
+                .orElseThrow(() -> new BusinessException("Local Estoque não encontrado"));
 
+        movimentarProduto(
+                produto,
+                localEstoque,
+                movimentacaoProduto.getQuantidade(),
+                movimentacaoProduto.getTipoMovimentacao()
+        );
+
+        return getEstoqueProduto(produto);
+    }
+
+    @Transactional
+    public void movimentarProduto(
+            ProdutoEntity produto,
+            LocalEstoqueEntity localEstoque,
+            BigDecimal quantidade,
+            TipoMovimentacaoEstoque tipoMovimentacao
+    ) {
         EstoqueProdutoEntity estoqueProduto = estoqueProdutoRepository.findEstoqueProduto(produto, localEstoque)
                 .orElse(null);
 
         if (estoqueProduto == null) {
-            estoqueProduto = estoqueProdutoRepository.save(new EstoqueProdutoEntity(produto, localEstoque));
+            if (tipoMovimentacao.isEntrada()) {
+                estoqueProduto = estoqueProdutoRepository.save(new EstoqueProdutoEntity(produto, localEstoque));
+            }
+            else {
+                throw new BusinessException("Esse Local não possui estoque do produto selecionado");
+            }
         }
 
         movimentacaoEstoqueProdutoRepository.save(MovimentacaoEstoqueProdutoEntity.builder()
                 .estoqueProduto(estoqueProduto)
-                .quantidade(movimentacaoProduto.getQuantidade())
+                .quantidade(quantidade)
                 .horarioMovimentacao(LocalDateTime.now())
-                .tipoMovimentacaoEstoque(movimentacaoProduto.getTipoMovimentacao())
+                .tipoMovimentacaoEstoque(tipoMovimentacao)
                 .build()
         );
 
-        boolean diminuiQuantidade = !movimentacaoProduto.getTipoMovimentacao().isSomaQuantidade();
+        BigDecimal quantidadeMovimentada = tipoMovimentacao.isEntrada()
+                ? quantidade
+                : quantidade.negate();
 
-        BigDecimal quantidadeMovimentada = diminuiQuantidade
-                ? movimentacaoProduto.getQuantidade().negate()
-                : movimentacaoProduto.getQuantidade();
+        BigDecimal novaQuantidade = estoqueProduto.getQuantidadeEmEstoque().add(quantidadeMovimentada);
 
-        estoqueProduto.setQuantidadeEmEstoque(
-                estoqueProduto.getQuantidadeEmEstoque().add(quantidadeMovimentada)
-        );
+        if (novaQuantidade.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BusinessException(
+                    "Não foi possível movimentar o produto. Quantidade Atual: " + estoqueProduto.getQuantidadeEmEstoque()
+            );
+        }
 
+        estoqueProduto.setQuantidadeEmEstoque(novaQuantidade);
         estoqueProdutoRepository.save(estoqueProduto);
-        return getEstoqueProduto(produto);
     }
+
 }

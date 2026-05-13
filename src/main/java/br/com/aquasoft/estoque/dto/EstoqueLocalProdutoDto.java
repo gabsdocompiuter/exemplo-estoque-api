@@ -11,9 +11,10 @@ import java.math.BigDecimal;
 public class EstoqueLocalProdutoDto {
 
     private LocalEstoqueDto localEstoque;
-
     private BigDecimal quantidadeEmEstoque;
 
+
+    /*** Métodos de Conversão ***/
 
     public static EstoqueLocalProdutoDto fromEntity(EstoqueProdutoEntity entity) {
         return EstoqueLocalProdutoDto.builder()

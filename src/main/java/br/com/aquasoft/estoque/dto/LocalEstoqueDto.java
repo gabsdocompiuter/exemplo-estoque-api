@@ -18,6 +18,8 @@ public class LocalEstoqueDto {
     private String descricao;
 
 
+    /*** Métodos de Conversão ***/
+
     public LocalEstoqueEntity toEntity() {
         return LocalEstoqueEntity.builder()
                 .id(id)

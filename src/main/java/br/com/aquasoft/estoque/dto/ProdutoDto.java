@@ -19,6 +19,8 @@ public class ProdutoDto {
     private String descricao;
 
 
+    /*** Métodos de Conversão ***/
+
     public ProdutoEntity toEntity() {
         return ProdutoEntity.builder()
                 .id(id)
